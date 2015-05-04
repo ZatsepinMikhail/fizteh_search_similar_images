@@ -1,3 +1,6 @@
+#ifndef H_THUMBNAIL
+#define H_THUMBNAIL
+
 #include <opencv2/opencv.hpp>
 #include <cmath>
 #include <iostream>
@@ -10,9 +13,7 @@ class Thumbnail {
 public:
 	Thumbnail(cv::Mat image, const char* source_image_path)
 	  : image_(image),
-		source_image_path_(source_image_path) {
-			//std::cout << source_image_path << "\n";;
-		}
+		source_image_path_(source_image_path) {}
 
 	const char* GetSourceImagePath() const {
 		return source_image_path_;
@@ -29,7 +30,7 @@ public:
 	size_t GetImageHeight() const {
 		return image_.size().height;
 	}
-private:
+
 	cv::Mat image_;
 	const char* source_image_path_;
 
@@ -78,8 +79,11 @@ public:
 	}
 
 	Thumbnail parent_thumbnail_;
+
 	std::vector<unsigned char> vectorized_image_;
 
 	//rename
 	double module_;
 };
+
+#endif
