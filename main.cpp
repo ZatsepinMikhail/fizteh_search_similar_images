@@ -8,15 +8,14 @@
 
 #include "thumbnail.h"
 #include "hash_function.h"
-#include "perception_hash.h"
+//#include "perception_hash.h"
 #include "dct_hash.h"
 
 using namespace boost::filesystem;
 
 using namespace std;
 
-const string images_base = "/home/mikhail/image_search/pictures_base/test/";
-
+const string images_base = "/home/mikhail/image_search/pictures_base/OXC1";
 //const string compressed_images = "/home/mikhail/image_search/compressed_images/";
 
 Thumbnail CompressImage(std::string* from_path) {
@@ -34,7 +33,7 @@ void LoadImages(const string input_path, vector<Thumbnail>& loaded_images) {
                 
                 for (auto it = recursive_directory_iterator(input_path); it != recursive_directory_iterator(); ++it) {
                     if (is_regular_file(it->path())) {
-                        cout << it->path() << "\n";
+                        //cout << it->path() << "\n";
                         loaded_images.push_back(CompressImage(new string(it->path().string())));
                     }
                 }
@@ -65,11 +64,10 @@ int main() {
     vector<Thumbnail> gray_thumbnails;
 
     LoadImages(images_base, thumbnails);
-    
 
-    std::vector<bitset<kDefaultHeight * kDefaultWidth>> hashes(thumbnails.size());
+    std::vector<bitset<kDefaultHeight * kDefaultWidth / 16>> hashes(thumbnails.size());
     for (size_t i = 0; i < thumbnails.size(); ++i) {
-        hashes[i] = GetPerceptionHash(thumbnails[i]);
+        hashes[i] = GetDCTHash(thumbnails[i]);
     }
 
     class MatchPair {
@@ -93,20 +91,21 @@ int main() {
     };
 
 
+
     vector<MatchPair> hamming_distances(thumbnails.size() * (thumbnails.size() - 1) / 2);
     size_t curr_pos = 0;
     for (size_t i = 0; i < thumbnails.size(); ++i) {
         for (size_t j = i + 1; j < thumbnails.size(); ++j) {
-            hamming_distances[curr_pos++] = MatchPair(GetHammingDistance(hashes[i], hashes[j]), i, j);
+            int distance = GetHammingDistance(hashes[i], hashes[j]);
+            if (distance != -1) {
+                hamming_distances[curr_pos++] = MatchPair(distance, i, j);
+            }
         }
     }
-    std::sort(hamming_distances.begin(), hamming_distances.end());
-    for (MatchPair one_pair : hamming_distances) {
-        if (one_pair.hamming_distance > 50) {
-            break;
-        }
-        cout << one_pair.hamming_distance << "\n" << thumbnails[one_pair.first].GetSourceImagePath() << "\n" <<
-                                                     thumbnails[one_pair.second].GetSourceImagePath() << "\n\n\n";               
+    std::sort(hamming_distances.begin(), hamming_distances.begin() + curr_pos);
+    for (size_t i = 0; i < curr_pos; ++i) {
+        cout << hamming_distances[i].hamming_distance << "\n" << thumbnails[hamming_distances[i].first].GetSourceImagePath() << "\n" <<
+                                                     thumbnails[hamming_distances[i].second].GetSourceImagePath() << "\n\n\n";               
     }
     return 0;
 }
