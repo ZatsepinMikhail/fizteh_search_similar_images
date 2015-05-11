@@ -9,3 +9,6 @@ const int kRangeRight = 127;
 
 const int kHashLength = 8;
 const int kHashTableNumber = 4;
+
+const float kRange = 0.8;
+const float kCRange = kRange * 0.9;

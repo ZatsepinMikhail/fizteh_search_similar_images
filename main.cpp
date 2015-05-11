@@ -12,7 +12,8 @@ using namespace boost::filesystem;
 
 using namespace std;
 
-const string images_base = "/home/mikhail/image_search/pictures_base/N2";
+const string images_base = "/home/mikhail/image_search/pictures_base/OXC1/";
+const string result_path = "/home/mikhail/image_search/project/sim_hash/request.jpeg";
 //const string compressed_images = "/home/mikhail/image_search/compressed_images/";
 
 VectorizedThumbnail GetThumbnailFromImage(std::string* from_path) {
@@ -59,6 +60,17 @@ int main() {
     hash_tables.emplace_back(thumbnails.begin(), thumbnails.end());
   }
 
-  
+  for (size_t curr_table = 0; curr_table < kHashTableNumber; ++curr_table) {
+    size_t bucket_number = hash_tables[curr_table].bucket(thumbnails[0]);
+    for (auto it = hash_tables[curr_table].begin(bucket_number); it != hash_tables[curr_table].end(bucket_number); ++it) {
+      if (thumbnails[199] != *it) {
+        float cos_btw_vectors = std::abs(GetCosBtwVectors(*it, thumbnails[199]));
+        if (cos_btw_vectors >= kCRange) {
+          cout << curr_table << ": with" << cos_btw_vectors << "..." << it->get_source_path() << "\n";
+        }
+      }
+    }
+  }
+
   return 0;
 }

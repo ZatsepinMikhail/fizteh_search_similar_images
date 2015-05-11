@@ -9,9 +9,9 @@
 
 class VectorizedThumbnail {
 public:
-	VectorizedThumbnail(cv::Mat image, const char* source_image_path)
+	VectorizedThumbnail(cv::Mat image, const char* source_path)
 	  : vectorized_image_(kDefaultDimensionality),
-	    source_image_path_(source_image_path) {
+	    source_path_(source_path) {
     	cv::Mat compressed_image;
     	cv::resize(image, compressed_image, cv::Size(kDefaultHeight, kDefaultWidth), 0, 0);
 
@@ -20,15 +20,19 @@ public:
 	}
 
 	bool operator == (const VectorizedThumbnail& other) const {
-		return source_image_path_ == other.source_image_path_;
+		return source_path_ == other.source_path_;
 	}
 
-	const char* get_source_image_path() const {
-		return source_image_path_;
+	bool operator != (const VectorizedThumbnail& other) const {
+		return source_path_ != other.source_path_;
+	}
+
+	const char* get_source_path() const {
+		return source_path_;
 	}
 
 	std::vector<char> vectorized_image_;
-	const char* source_image_path_;
+	const char* source_path_;
 
 private:
 
@@ -47,3 +51,20 @@ private:
 	}
 
 };
+
+
+float GetCosBtwVectors(const VectorizedThumbnail& first, const VectorizedThumbnail& second) {
+	const std::vector<char> first_vector = first.vectorized_image_;
+	const std::vector<char> second_vector = second.vectorized_image_;
+
+	float scalar_product = 0.f;
+	float first_module = 0.f;
+	float second_module = 0.f;
+
+	for (size_t curr_pos = 0; curr_pos < kDefaultDimensionality; ++curr_pos) {
+		scalar_product += first_vector[curr_pos] * second_vector[curr_pos];
+		first_module += first_vector[curr_pos] * first_vector[curr_pos];
+		second_module += second_vector[curr_pos] * second_vector[curr_pos];
+	}
+	return scalar_product / std::sqrt(first_module * second_module);
+}
