@@ -1,89 +1,49 @@
-#ifndef H_THUMBNAIL
-#define H_THUMBNAIL
+#pragma once
 
 #include <opencv2/opencv.hpp>
 #include <cmath>
 #include <iostream>
-
 #include <stdexcept>
 
-class VectorizedThumbnail;
-
-class Thumbnail {
-public:
-	Thumbnail(cv::Mat image, const char* source_image_path)
-	  : image_(image),
-		source_image_path_(source_image_path) {}
-
-	const char* GetSourceImagePath() const {
-		return source_image_path_;
-	}
-
-	cv::Size GetImageSize() const {
-		return image_.size();
-	}
-
-	size_t GetImageWidth() const {
-		return image_.size().width;
-	}
-
-	size_t GetImageHeight() const {
-		return image_.size().height;
-	}
-
-	cv::Mat image_;
-	const char* source_image_path_;
-
-	friend class VectorizedThumbnail;
-};
+#include "constants.h"
 
 class VectorizedThumbnail {
 public:
-	VectorizedThumbnail(Thumbnail& thumbnail)
-	  : parent_thumbnail_(thumbnail),
-	    vectorized_image_(3 * thumbnail.GetImageHeight() * thumbnail.GetImageWidth()) {
-	    size_t curr_index = 0;
-	    for (size_t i = 0; i < thumbnail.GetImageHeight(); ++i) {
-	    	for (size_t j = 0; j < thumbnail.GetImageWidth(); ++j) {
-	    		cv::Vec3b colour = thumbnail.image_.at<cv::Vec3b>(i, j);
-	    		vectorized_image_[curr_index] = colour[0];
-	    		vectorized_image_[curr_index + 1] = colour[1];
-	    		vectorized_image_[curr_index + 2] = colour[2];
-	    		curr_index += 3;
-	    	}
-	    }
-	    for (unsigned char element : vectorized_image_) {
-	    	module_ += element * element;
-	    }
-	    module_ = std::sqrt(module_);
-	}	
+	VectorizedThumbnail(cv::Mat image, const char* source_image_path)
+	  : vectorized_image_(kDefaultDimensionality),
+	    source_image_path_(source_image_path) {
+    	cv::Mat compressed_image;
+    	cv::resize(image, compressed_image, cv::Size(kDefaultHeight, kDefaultWidth), 0, 0);
 
-	size_t Size() const {
-		return vectorized_image_.size();
+    	//naming for private methods?
+    	init_vectorized_image(compressed_image);
 	}
 
-	double GetModule() const {
-		return module_;
+	bool operator == (const VectorizedThumbnail& other) const {
+		return source_image_path_ == other.source_image_path_;
 	}
 
-	//scalar production
-	double operator * (const VectorizedThumbnail& other) {
-		if (Size() != other.Size()) {
-			throw std::runtime_error("scalar production is undefined");
-		}
-		double result = 0;
-		for (size_t i = 0; i < Size(); ++i) {
-			result += vectorized_image_[i] * other.vectorized_image_[i];
-		}
-		return result;
+	const char* get_source_image_path() const {
+		return source_image_path_;
 	}
 
-	Thumbnail parent_thumbnail_;
+	std::vector<char> vectorized_image_;
+	const char* source_image_path_;
 
-	std::vector<unsigned char> vectorized_image_;
+private:
 
-	//rename
-	double module_;
+	void init_vectorized_image(const cv::Mat& image) {
+		size_t curr_index = 0;
+	
+	  for (int i = 0; i < image.rows; ++i) {
+	  	for (int j = 0; j < image.cols; ++j) {
+	  		cv::Vec3b colour = image.at<cv::Vec3b>(i, j);
+	   		vectorized_image_[curr_index] = colour[0] + kRangeLeft;
+	   		vectorized_image_[curr_index + 1] = colour[1] + kRangeLeft;
+	   		vectorized_image_[curr_index + 2] = colour[2] + kRangeLeft;
+	   		curr_index += 3;
+	   	}
+	  }
+	}
+
 };
-
-#endif
