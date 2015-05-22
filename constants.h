@@ -1,14 +1,14 @@
 #pragma once
 
-const int kDefaultHeight = 20;
-const int kDefaultWidth = 20;
+const int kDefaultHeight = 80;
+const int kDefaultWidth = 80;
 const int kDefaultDimensionality = kDefaultWidth * kDefaultHeight * 3;
 
-const int kRangeLeft = -128;
-const int kRangeRight = 127;
+const int kRangeLeft = -256;
+const int kRangeRight = 255;
 
 const int kHashLength = 8;
-const int kHashTableNumber = 4;
+const int kHashTableNumber = 16;
 
-const float kRange = 0.8;
-const float kCRange = kRange * 0.9;
+double kRange = 0.97;
+const double kCRange = kRange * 0.97;

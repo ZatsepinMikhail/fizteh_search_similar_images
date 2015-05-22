@@ -9,6 +9,9 @@
 
 class VectorizedThumbnail {
 public:
+	//tmp
+	VectorizedThumbnail(){}
+	
 	VectorizedThumbnail(cv::Mat image, const char* source_path)
 	  : vectorized_image_(kDefaultDimensionality),
 	    source_path_(source_path) {
@@ -31,8 +34,10 @@ public:
 		return source_path_;
 	}
 
-	std::vector<char> vectorized_image_;
+	std::vector<short> vectorized_image_;
 	const char* source_path_;
+
+	//write destructor
 
 private:
 
@@ -42,9 +47,9 @@ private:
 	  for (int i = 0; i < image.rows; ++i) {
 	  	for (int j = 0; j < image.cols; ++j) {
 	  		cv::Vec3b colour = image.at<cv::Vec3b>(i, j);
-	   		vectorized_image_[curr_index] = colour[0] + kRangeLeft;
-	   		vectorized_image_[curr_index + 1] = colour[1] + kRangeLeft;
-	   		vectorized_image_[curr_index + 2] = colour[2] + kRangeLeft;
+	   		vectorized_image_[curr_index] = colour[0];
+	   		vectorized_image_[curr_index + 1] = colour[1];
+	   		vectorized_image_[curr_index + 2] = colour[2];
 	   		curr_index += 3;
 	   	}
 	  }
@@ -53,13 +58,13 @@ private:
 };
 
 
-float GetCosBtwVectors(const VectorizedThumbnail& first, const VectorizedThumbnail& second) {
-	const std::vector<char> first_vector = first.vectorized_image_;
-	const std::vector<char> second_vector = second.vectorized_image_;
+double GetCosBtwVectors(const VectorizedThumbnail& first, const VectorizedThumbnail& second) {
+	const std::vector<short> first_vector = first.vectorized_image_;
+	const std::vector<short> second_vector = second.vectorized_image_;
 
-	float scalar_product = 0.f;
-	float first_module = 0.f;
-	float second_module = 0.f;
+	double scalar_product = 0.f;
+	double first_module = 0.f;
+	double second_module = 0.f;
 
 	for (size_t curr_pos = 0; curr_pos < kDefaultDimensionality; ++curr_pos) {
 		scalar_product += first_vector[curr_pos] * second_vector[curr_pos];
