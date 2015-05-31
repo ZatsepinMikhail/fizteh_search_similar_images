@@ -55,8 +55,8 @@ using compound_hash = std::bitset<kHashLength>;
 class CompoundHashFunction {
 
 public:
-  CompoundHashFunction() {
-    for (size_t i = 0; i < kHashLength; ++i) {
+    CompoundHashFunction() {
+      for (size_t i = 0; i < kHashLength; ++i) {
       hash_functions_.emplace_back();
     }
   }

@@ -14,34 +14,30 @@ using namespace boost::filesystem;
 
 using namespace std;
 
-const string images_base = "/home/mikhail/image_search/pictures_base/";
+const string images_base = "/home/mikhail/image_search/pictures_base/Altai";
 const string result_path = "/home/mikhail/image_search/result/";
 
-int max_count = 100;
-
-//const string result_path = "/home/mikhail/image_search/project/sim_hash/request.jpeg";
-//const string compressed_images = "/home/mikhail/image_search/compressed_images/";
-
 VectorizedThumbnail GetThumbnailFromImage(std::string from_path) {
-  cout << "load:" << from_path << "\n";
+  //cout << "load:" << from_path << "\n";
   cv::Mat image = cv::imread(from_path.c_str());
   return VectorizedThumbnail(image, from_path.c_str());
 }
 
+bool IsImage(const string extension) {
+  return extension == ".jpg" || extension == ".bmp";
+}
+
 void LoadImages(const string input_path, vector<VectorizedThumbnail>& loaded_images) {
-  int count = 0;
   try {
     if (exists(input_path)) {
 
       if (is_directory(input_path)) {
                 
         for (auto it = recursive_directory_iterator(input_path); it != recursive_directory_iterator(); ++it) {
-          if (count == max_count) {
-            break;
-          }
           if (is_regular_file(it->path())) {
-            loaded_images.push_back(GetThumbnailFromImage(*(new string(it->path().string()))));
-            //++count;
+            if (IsImage(it->path().extension().string())) {
+              loaded_images.push_back(GetThumbnailFromImage(*(new string(it->path().string()))));
+            }
           }
         }
       
@@ -59,22 +55,23 @@ void LoadImages(const string input_path, vector<VectorizedThumbnail>& loaded_ima
 
 
 int main() {
-  time_t t = clock();
+  
   path input_path(images_base);
 	
   vector<VectorizedThumbnail> thumbnails;
 
+  time_t t = clock();
   LoadImages(images_base, thumbnails);
+  t = clock() - t;
+  cout << (float) t / CLOCKS_PER_SEC << "\n"; 
 
   vector<unordered_multiset<VectorizedThumbnail, CompoundHashFunction>> hash_tables;
+
   for (size_t i = 0; i < kHashTableNumber; ++i) {
     hash_tables.emplace_back(thumbnails.begin(), thumbnails.end());
   }
 
-  t = clock() - t;
-  cout << ((float) t) / CLOCKS_PER_SEC << "\n";
-
-  while(true) {
+  /*while(true) {
     cout << "enter image path:\n";
     string request;
     cin >> request;
@@ -99,7 +96,7 @@ int main() {
 
       for (auto it = hash_tables[curr_table].begin(bucket_number); it != hash_tables[curr_table].end(bucket_number); ++it) {
         double cos_btw_vectors = std::abs(GetCosBtwVectors(*it, request_thumb));
-        if (cos_btw_vectors >= kCRange) {
+        if (cos_btw_vectors >= kRange * kPrecision) {
 
           cout << cos_btw_vectors << "  " << it->get_source_path() << "\n";
           string match(it->get_source_path());
@@ -115,9 +112,13 @@ int main() {
     for (auto it = result.rbegin(); it != result.rend(); ++it) {
       cv::Mat image = cv::imread(it->second);
       imwrite(result_path + to_string(matches_number) + ".jpg", image);
+      cv::Mat compressed_image;
+      cv::resize(image, compressed_image, cv::Size(kDefaultHeight, kDefaultWidth), 0, 0);
+      cv::cvtColor(compressed_image, compressed_image, CV_BGR2GRAY);
+      imwrite(result_path + "_compressed_" + to_string(matches_number) + ".jpg", compressed_image);
       ++matches_number;
     }
-  }
+  }*/
 
   return 0;
 }

@@ -17,9 +17,10 @@ public:
 	    source_path_(source_path) {
     	cv::Mat compressed_image;
     	cv::resize(image, compressed_image, cv::Size(kDefaultHeight, kDefaultWidth), 0, 0);
-
+    	cv::Mat gray_image;
+    	cv::cvtColor(compressed_image, gray_image, CV_BGR2GRAY);
     	//naming for private methods?
-    	init_vectorized_image(compressed_image);
+    	init_vectorized_image(gray_image);
 	}
 
 	bool operator == (const VectorizedThumbnail& other) const {
@@ -46,11 +47,14 @@ private:
 	
 	  for (int i = 0; i < image.rows; ++i) {
 	  	for (int j = 0; j < image.cols; ++j) {
-	  		cv::Vec3b colour = image.at<cv::Vec3b>(i, j);
+	  		/*cv::Vec3b colour = image.at<cv::Vec3b>(i, j);
 	   		vectorized_image_[curr_index] = colour[0];
 	   		vectorized_image_[curr_index + 1] = colour[1];
 	   		vectorized_image_[curr_index + 2] = colour[2];
-	   		curr_index += 3;
+	   		curr_index += 3;*/
+	   		unsigned char colour = image.at<unsigned char>(i, j);
+	   		vectorized_image_[curr_index] = colour;
+	   		++curr_index;
 	   	}
 	  }
 	}
