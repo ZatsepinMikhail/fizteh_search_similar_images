@@ -7,9 +7,11 @@
 #include <vector>
 #include <unordered_set>
 
+#include "steady_timer.h"
 #include "thumbnail.h"
 #include "hash_functions.h"
 #include "thread_pool/task_queue.h"
+#include "thread_pool/thread_guard.h"
 
 using namespace boost::filesystem;
 
@@ -18,8 +20,9 @@ using namespace std;
 const string images_base = "/home/mikhail/image_search/pictures_base/Altai";
 const string result_path = "/home/mikhail/image_search/result/";
 
+using HashTable = unordered_multiset<VectorizedThumbnail, CompoundHashFunction>;
+
 VectorizedThumbnail GetThumbnailFromImage(std::string from_path) {
-  cout << "load:" << from_path << "\n";
   cv::Mat image = cv::imread(from_path.c_str());
   return VectorizedThumbnail(image, from_path.c_str());
 }
@@ -29,8 +32,7 @@ bool IsImage(const string extension) {
 }
 
 void LoadImages(const string input_path, vector<VectorizedThumbnail>& loaded_images) {
-  int count = 0;
-  TaskQueue<VectorizedThumbnail> task_queue(100, 1);
+  TaskQueue<VectorizedThumbnail> task_queue(1000);
   try {
     if (exists(input_path)) {
 
@@ -39,11 +41,8 @@ void LoadImages(const string input_path, vector<VectorizedThumbnail>& loaded_ima
         for (auto it = recursive_directory_iterator(input_path); it != recursive_directory_iterator(); ++it) {
           if (is_regular_file(it->path())) {
             if (IsImage(it->path().extension().string())) {
+              //loaded_images.push_back(GetThumbnailFromImage(*(new string(it->path().string()))));
               task_queue.Submit(std::bind(GetThumbnailFromImage, *(new string(it->path().string()))));
-              ++count;
-            }
-            if (count == 10) {
-              break;
             }
           }
         }
@@ -61,24 +60,45 @@ void LoadImages(const string input_path, vector<VectorizedThumbnail>& loaded_ima
   loaded_images = task_queue.ShutDown();
 }
 
+void InitializeHashTables(vector<HashTable>& hash_tables, vector<VectorizedThumbnail>& thumbnails, int threads_number, int id) {
+  for (int curr_table = id; curr_table < hash_tables.size(); curr_table += threads_number) {
+    hash_tables[curr_table].insert(thumbnails.begin(), thumbnails.end());
+  }
+}
+
+
 int main() {
   
   path input_path(images_base);
   vector<VectorizedThumbnail> thumbnails;
 
-  time_t t = clock();
+  steady_timer timer;
   LoadImages(images_base, thumbnails);
-  t = clock() - t;
-  cout << (float) t / CLOCKS_PER_SEC << "\n"; 
-  cout << thumbnails.size() << "\n";
+  cout << timer.seconds_elapsed() << "\n";
 
-  vector<unordered_multiset<VectorizedThumbnail, CompoundHashFunction>> hash_tables;
+  vector<HashTable> hash_tables;
 
-  for (size_t i = 0; i < kHashTableNumber; ++i) {
-    hash_tables.emplace_back(thumbnails.begin(), thumbnails.end());
+  vector<thread> threads;
+
+  int threads_number = GetDefaultNumberOfWorkers();
+  timer.reset();
+  //slower:
+  /*for (int i = 0; i < threads_number; ++i) {
+    threads.emplace_back(InitializeHashTables, std::ref(hash_tables), std::ref(thumbnails), threads_number, i);
   }
+  for (int i = 0; i < threads_number; ++i) {
+    threads[i].join();
+  }*/
+  for (int i = 0; i < hash_tables.size(); ++i) {
+    hash_tables[i].insert(thumbnails.begin(), thumbnails.end());  
+  }
+  cout << timer.seconds_elapsed() << "\n";
 
-  /*while(true) {
+
+
+
+
+  while(true) {
     cout << "enter image path:\n";
     string request;
     cin >> request;
@@ -125,7 +145,7 @@ int main() {
       imwrite(result_path + "_compressed_" + to_string(matches_number) + ".jpg", compressed_image);
       ++matches_number;
     }
-  }*/
+  }
 
   return 0;
 }

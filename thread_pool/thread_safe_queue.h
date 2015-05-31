@@ -61,7 +61,6 @@ public:
 		if (queue_.empty()) {
 			return false;
 		}
-		std::cout << "in Dequeue : " << queue_.size() << "\n";
 		popped_element = std::move(queue_.front());
 		queue_.pop();
 		queue_not_full_cond_.notify_one();

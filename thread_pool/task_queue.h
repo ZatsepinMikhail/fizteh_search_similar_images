@@ -16,6 +16,11 @@ using std::promise;
 using std::thread;
 using std::vector;
 
+static size_t GetDefaultNumberOfWorkers() {
+	int system_concurrency = thread::hardware_concurrency();
+	return system_concurrency ? system_concurrency : 4;
+}
+
 template <typename R>
 class TaskQueue {
 public:
@@ -43,8 +48,6 @@ public:
 
 	~TaskQueue();
 
-	std::vector<R> Worker();
-
 private:
 	TaskQueue(const TaskQueue&) = delete;
 	void operator = (const TaskQueue&) = delete;
@@ -53,13 +56,6 @@ private:
 	vector<future<std::vector<R>>> thread_results_;
 
 	ThreadSafeQueue<std::packaged_task<R()>> tasks_;
-
-	static size_t GetDefaultNumberOfWorkers() {
-		int system_concurrency = thread::hardware_concurrency();
-		return system_concurrency ? system_concurrency : 4;
-	}
-
-
 };
 
 #include "task_queue.hpp"
