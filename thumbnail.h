@@ -23,6 +23,11 @@ public:
     	init_vectorized_image(gray_image);
 	}
 
+	VectorizedThumbnail(const VectorizedThumbnail& other) {
+		source_path_ = other.source_path_;
+		vectorized_image_ = other.vectorized_image_;
+	}
+
 	bool operator == (const VectorizedThumbnail& other) const {
 		return source_path_ == other.source_path_;
 	}

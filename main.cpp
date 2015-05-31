@@ -9,6 +9,7 @@
 
 #include "thumbnail.h"
 #include "hash_functions.h"
+#include "thread_pool/task_queue.h"
 
 using namespace boost::filesystem;
 
@@ -18,7 +19,7 @@ const string images_base = "/home/mikhail/image_search/pictures_base/Altai";
 const string result_path = "/home/mikhail/image_search/result/";
 
 VectorizedThumbnail GetThumbnailFromImage(std::string from_path) {
-  //cout << "load:" << from_path << "\n";
+  cout << "load:" << from_path << "\n";
   cv::Mat image = cv::imread(from_path.c_str());
   return VectorizedThumbnail(image, from_path.c_str());
 }
@@ -28,6 +29,8 @@ bool IsImage(const string extension) {
 }
 
 void LoadImages(const string input_path, vector<VectorizedThumbnail>& loaded_images) {
+  int count = 0;
+  TaskQueue<VectorizedThumbnail> task_queue(100, 1);
   try {
     if (exists(input_path)) {
 
@@ -36,7 +39,11 @@ void LoadImages(const string input_path, vector<VectorizedThumbnail>& loaded_ima
         for (auto it = recursive_directory_iterator(input_path); it != recursive_directory_iterator(); ++it) {
           if (is_regular_file(it->path())) {
             if (IsImage(it->path().extension().string())) {
-              loaded_images.push_back(GetThumbnailFromImage(*(new string(it->path().string()))));
+              task_queue.Submit(std::bind(GetThumbnailFromImage, *(new string(it->path().string()))));
+              ++count;
+            }
+            if (count == 10) {
+              break;
             }
           }
         }
@@ -51,19 +58,19 @@ void LoadImages(const string input_path, vector<VectorizedThumbnail>& loaded_ima
   } catch (const filesystem_error& ex) {
     cout << ex.what() << '\n';
   }
+  loaded_images = task_queue.ShutDown();
 }
-
 
 int main() {
   
   path input_path(images_base);
-	
   vector<VectorizedThumbnail> thumbnails;
 
   time_t t = clock();
   LoadImages(images_base, thumbnails);
   t = clock() - t;
   cout << (float) t / CLOCKS_PER_SEC << "\n"; 
+  cout << thumbnails.size() << "\n";
 
   vector<unordered_multiset<VectorizedThumbnail, CompoundHashFunction>> hash_tables;
 
